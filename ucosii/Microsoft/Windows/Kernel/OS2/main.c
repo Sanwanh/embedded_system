@@ -134,6 +134,20 @@ int  main (void)
             (OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR));
     }
 
+    printf("==========TCB linked list==========\n");
+    printf("Task \t Prev_TCB_addr   TCB_addr   Next_TCB_addr\n");
+    for (int i = OS_MAX_TASKS + OS_N_SYS_TASKS;i >= 0;i--) {
+        if (OSTCBTbl[i].OSTCBPrio != 0) {
+            printf("%2d \t %6x \t %6x \t %6x\n", 
+                OSTCBTbl[i].OSTCBPrio, 
+                OSTCBTbl[i].OSTCBPrev, 
+                &OSTCBTbl[i], 
+                OSTCBTbl[i].OSTCBNext);
+        }
+	}
+    printf("\n");
+
+
     printf("%2d\t**********\ttask(%2d)(%2d)\t%2d\n", OSTimeGet(), TaskParameter[0].TaskID, TaskParameter[0].TaskCount, OSCtxSwCtr);
     if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0)
     {
