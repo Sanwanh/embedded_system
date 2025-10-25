@@ -56,9 +56,9 @@ void InputFile() {
     errno_t err;
 
     if ((err = fopen_s(&fp, INPUT_FILE_NAME, "r")) == 0)
-        printf("The file %s was opened", INPUT_FILE_NAME);
+        printf("The file %s was opened\n", INPUT_FILE_NAME);
     else 
-        printf("The file %s was not opened", INPUT_FILE_NAME);
+        printf("The file %s was not opened\n", INPUT_FILE_NAME);
 
     char str[MAX];
     char* ptr;

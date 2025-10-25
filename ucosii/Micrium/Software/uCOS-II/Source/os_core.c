@@ -2145,6 +2145,10 @@ INT8U  OS_TCBInit (INT8U    prio,
         OSRdyTbl[ptcb->OSTCBY] |= ptcb->OSTCBBitX;
         OSTaskCtr++;                                       /* Increment the #tasks counter             */
         OS_TRACE_TASK_READY(ptcb);
+        printf("------After Task[%3.1d] begin linked------\n", ptcb->OSTCBPrio);
+        printf("Previous TCB point to address %6x\n", (void*)ptcb->OSTCBPrev);
+        printf("Current  TCB point to address %6x\n", (void*)ptcb);
+        printf("Next     TCB point to address %6x\n\n", (void*)ptcb->OSTCBNext);
         OS_EXIT_CRITICAL();
         return (OS_ERR_NONE);
     }
