@@ -1,4 +1,22 @@
-﻿  main.c
+﻿  os_cpu_c.c
+  os_core.c
+C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Micrium\Software\uCOS-II\Source\os_core.c(964,13): warning C4013: 'exit' 未定義; 假設 extern 傳回整數
+C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Micrium\Software\uCOS-II\Source\os_core.c(2157,16): warning C4477: 'printf' : 格式字串 '%6x' 需要 'unsigned int' 類型的引數，但 variadic 引數 1 的類型為 'void *'
+C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Micrium\Software\uCOS-II\Source\os_core.c(2158,16): warning C4477: 'printf' : 格式字串 '%6x' 需要 'unsigned int' 類型的引數，但 variadic 引數 1 的類型為 'void *'
+C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Micrium\Software\uCOS-II\Source\os_core.c(2159,16): warning C4477: 'printf' : 格式字串 '%6x' 需要 'unsigned int' 類型的引數，但 variadic 引數 1 的類型為 'void *'
+  os_dbg_r.c
+  os_flag.c
+  os_mbox.c
+  os_mem.c
+  os_mutex.c
+  os_q.c
+  os_sem.c
+  os_task.c
+  os_time.c
+  os_tmr.c
+  app_hooks.c
+C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS2\app_hooks.c(76,27): warning C4013: 'atoi' 未定義; 假設 extern 傳回整數
+  main.c
 C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS2\main.c(122,16): warning C4013: 'malloc' 未定義; 假設 extern 傳回整數
 C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS2\main.c(122,14): warning C4047: '=': 'OS_STK **' 與 'int' 間接取值的層級不同
 C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS2\main.c(125,21): warning C4047: '=': 'OS_STK *' 與 'int' 間接取值的層級不同
@@ -6,4 +24,5 @@ C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS
 C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS2\main.c(141,20): warning C4477: 'printf' : 格式字串 '%6x' 需要 'unsigned int' 類型的引數，但 variadic 引數 2 的類型為 'os_tcb *'
 C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS2\main.c(141,20): warning C4477: 'printf' : 格式字串 '%6x' 需要 'unsigned int' 類型的引數，但 variadic 引數 3 的類型為 'OS_TCB *'
 C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS2\main.c(141,20): warning C4477: 'printf' : 格式字串 '%6x' 需要 'unsigned int' 類型的引數，但 variadic 引數 4 的類型為 'os_tcb *'
+  正在產生程式碼...
   OS2.vcxproj -> C:\Users\alex2\Desktop\vsCode\embedded_system\ucosii\Microsoft\Windows\Kernel\OS2\VS\Debug\OS2.exe

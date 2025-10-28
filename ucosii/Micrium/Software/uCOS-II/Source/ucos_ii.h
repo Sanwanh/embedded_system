@@ -69,6 +69,10 @@ extern "C" {
 #define MAX 20
 #define INFO 4
 
+#define RM 1
+#define FIFO 0
+//#define ALGORITHM RM/FIFO
+
 typedef struct task_para_set {
     INT16U TaskID;
     INT16U TaskArriveTime;

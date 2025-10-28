@@ -1789,6 +1789,54 @@ static  void  OS_SchedNew (void)
         OSPrioHighRdy = (INT8U)((y << 4u) + OSUnMapTbl[(OS_PRIO)(*ptbl >> 8u) & 0xFFu] + 8u);
     }
 #endif
+
+#if RM
+    printf("RM\n");
+   // OS_SchedNew_RM();
+    INT8U prio;
+    OS_TCB* ptcb;
+    OS_TCB* best_tcb = NULL;
+    INT32U min_period = 0xFFFFFFFF;
+
+    for (prio = 0; prio <= OS_LOWEST_PRIO; prio++) {
+        if (OSTCBPrioTbl[prio] != NULL) {
+            ptcb = OSTCBPrioTbl[prio];
+            if (ptcb->OSTCBStat == OS_STAT_RDY) {
+                if (ptcb->period < min_period) {
+                    min_period = ptcb->period;
+                    best_tcb = ptcb;
+                }
+            }
+        }
+    }
+
+    if (best_tcb != NULL) OSPrioHighRdy = best_tcb->OSTCBPrio;
+#elif FIFO
+    printf("FIFO\n");
+    //OS_SchedNew_FIFO();
+    void OS_SchedNew_FIFO(void)
+    {
+        INT8U prio;
+        OS_TCB* ptcb;
+        OS_TCB* oldest_tcb = NULL;
+        INT32U oldest_time = 0xFFFFFFFF;
+
+        for (prio = 0; prio <= OS_LOWEST_PRIO; prio++) {
+            ptcb = OSTCBPrioTbl[prio];
+            if (ptcb != NULL && ptcb->OSTCBStat == OS_STAT_RDY) {
+                if (ptcb->ready_time < oldest_time) {
+                    oldest_time = ptcb->ready_time;
+                    oldest_tcb = ptcb;
+                }
+            }
+        }
+
+        if (oldest_tcb != NULL) {
+            OSPrioHighRdy = oldest_tcb->OSTCBPrio;
+        }
+    }
+
+#endif
 }
 
 
