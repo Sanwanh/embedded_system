@@ -1860,10 +1860,6 @@ static  void  OS_SchedNew (void)
                 continue;
             }
 
-            if (p_tcb->OSTCBDly != 0u) {
-                continue;
-            }
-
             p_task_data = (task_para_set *)p_tcb->OSTCBExtPtr;
             if (p_task_data == (task_para_set *)0) {
                 continue;
