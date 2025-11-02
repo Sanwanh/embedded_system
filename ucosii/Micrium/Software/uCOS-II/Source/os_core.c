@@ -1797,28 +1797,48 @@ static  void  OS_SchedNew (void)
 #endif
 
 #if RM
-    //printf("RM\t");
+    {
+        OS_TCB        *p_tcb;
+        task_para_set *p_task_data;
+        task_para_set *p_best_task = (task_para_set *)0;
+        INT8U          best_prio    = OS_TASK_IDLE_PRIO;
+        CPU_BOOLEAN    found        = OS_FALSE;
 
-    int mini = 99;
-    int TaskID_HighRdy=63;
-    //OSPrioHighRdy = 63;
+        for (INT16U prio = 0u; prio <= OS_LOWEST_PRIO; prio++) {
+            p_tcb = OSTCBPrioTbl[prio];
+            if (p_tcb == (OS_TCB *)0) {
+                continue;
+            }
 
-    for (int i = OS_MAX_TASKS + OS_N_SYS_TASKS;i >= 0;i--) {
-        if (OSTCBTbl[i].OSTCBPrio != 0 && TaskParameter[OSTCBTbl[i].OSTCBPrio - 1].TaskPeriodic > 0) {
-            //printf("ID = %d\n", TaskParameter[OSTCBTbl[i].OSTCBPrio - 1].TaskID);
-            if (OSTCBTbl[i].OSTCBStat == OS_STAT_RDY) {
-                if (TaskParameter[OSTCBTbl[i].OSTCBPrio - 1].TaskPeriodic < mini) {
-                    mini = TaskParameter[OSTCBTbl[i].OSTCBPrio - 1].TaskPeriodic;
-                    //printf("OSPrioHighRdy - 1 = %d\n", OSTCBTbl[i].OSTCBPrio - 1);
-                    OSPrioHighRdy = TaskParameter[OSPrioHighRdy - 1].TaskID; //OSTCBTbl[i].OSTCBPrio - 1   TaskID_HighRdy
-                    //printf("ID = %d, mini=%d, high=%d\t", TaskParameter[OSTCBTbl[i].OSTCBPrio - 1].TaskID, mini, OSPrioHighRdy);
-                }
-			}
+            if (p_tcb->OSTCBStat != OS_STAT_RDY) {
+                continue;
+            }
+
+            p_task_data = (task_para_set *)p_tcb->OSTCBExtPtr;
+            if (p_task_data == (task_para_set *)0) {
+                continue;
+            }
+
+            if (p_task_data->TaskPeriodic == 0u) {
+                continue;
+            }
+
+            if ((found == OS_FALSE) ||
+                (p_task_data->TaskPeriodic < p_best_task->TaskPeriodic) ||
+                ((p_task_data->TaskPeriodic == p_best_task->TaskPeriodic) &&
+                 (p_task_data->TaskID < p_best_task->TaskID))) {
+                p_best_task = p_task_data;
+                best_prio   = p_tcb->OSTCBPrio;
+                found       = OS_TRUE;
+            }
+        }
+
+        if (found == OS_TRUE) {
+            OSPrioHighRdy = best_prio;
+        } else {
+            OSPrioHighRdy = OS_TASK_IDLE_PRIO;
         }
     }
-    //OSPrioHighRdy = TaskID_HighRdy;
-    if (OSPrioHighRdy > 63) OSPrioHighRdy = 63; // ????
-    //if (mini == 99) OSPrioHighRdy = OS_LOWEST_PRIO;
 #elif FIFO
     printf("FIFO\n");
     //OS_SchedNew_FIFO();
