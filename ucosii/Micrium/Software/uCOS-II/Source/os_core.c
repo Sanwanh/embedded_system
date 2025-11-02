@@ -88,6 +88,10 @@ static  void  OS_InitTaskStat(void);
 static  void  OS_InitTCBList(void);
 
 static  void  OS_SchedNew(void);
+static  void  OS_LogTaskColumn(FILE       *out,
+                               CPU_BOOLEAN has_job,
+                               INT16U      id,
+                               INT16S      job);
 
 
 /*
@@ -1688,6 +1692,24 @@ void  OS_MemCopy (INT8U  *pdest,
 }
 
 
+static  void  OS_LogTaskColumn(FILE       *out,
+                               CPU_BOOLEAN has_job,
+                               INT16U      id,
+                               INT16S      job)
+{
+    if (out == (FILE *)0) {
+        return;
+    }
+
+    if (has_job == OS_TRUE) {
+        fprintf(out, "task(%3u)(%2d)", (unsigned)id, (int)job);
+    } else {
+        fprintf(out, "task(%3u)", (unsigned)id);
+        fprintf(out, "    ");
+    }
+}
+
+
 /*
 *********************************************************************************************************
 *                                              SCHEDULER
@@ -1740,8 +1762,6 @@ void  OS_Sched (void)
                     INT32U        response_time  = 0u;
                     INT32U        wait_time      = 0u;
                     INT32U        slack_time     = 0u;
-                    char          origin_buf[20];
-                    char          next_buf[20];
 
                     if (origin_has_task == OS_TRUE) {
                         origin_id  = p_origin_task->TaskID;
@@ -1799,33 +1819,12 @@ void  OS_Sched (void)
                         next_id = OSTCBHighRdy->OSTCBPrio;
                     }
 
-                    if (origin_has_task == OS_TRUE) {
-                        (void)sprintf(origin_buf,
-                                      "task(%3u)(%2d)",
-                                      (unsigned)origin_id,
-                                      origin_job);
-                    } else {
-                        (void)sprintf(origin_buf,
-                                      "task(%3u)",
-                                      (unsigned)origin_id);
-                    }
-
-                    if (has_next == OS_TRUE) {
-                        (void)sprintf(next_buf,
-                                      "task(%3u)(%2d)",
-                                      (unsigned)next_id,
-                                      next_job);
-                    } else {
-                        (void)sprintf(next_buf,
-                                      "task(%3u)",
-                                      (unsigned)next_id);
-                    }
-
-                    printf("%3u    %-11s    %-13s    %-13s",
+                    printf("%3u    %-11s    ",
                            (unsigned)now_tick,
-                           status_label,
-                           origin_buf,
-                           next_buf);
+                           status_label);
+                    OS_LogTaskColumn(stdout, origin_has_task, origin_id, origin_job);
+                    printf("    ");
+                    OS_LogTaskColumn(stdout, has_next, next_id, next_job);
 
                     if (completed == OS_TRUE) {
                         printf("%12u%14u%14u", (unsigned)response_time, (unsigned)wait_time, (unsigned)slack_time);
@@ -1833,23 +1832,22 @@ void  OS_Sched (void)
                     printf("\n");
 
                     if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0) {
+                        fprintf(Output_fp,
+                                "%3u    %-11s    ",
+                                (unsigned)now_tick,
+                                status_label);
+                        OS_LogTaskColumn(Output_fp, origin_has_task, origin_id, origin_job);
+                        fprintf(Output_fp, "    ");
+                        OS_LogTaskColumn(Output_fp, has_next, next_id, next_job);
+
                         if (completed == OS_TRUE) {
                             fprintf(Output_fp,
-                                    "%3u    %-11s    %-13s    %-13s%12u%14u%14u\n",
-                                    (unsigned)now_tick,
-                                    status_label,
-                                    origin_buf,
-                                    next_buf,
+                                    "%12u%14u%14u\n",
                                     (unsigned)response_time,
                                     (unsigned)wait_time,
                                     (unsigned)slack_time);
                         } else {
-                            fprintf(Output_fp,
-                                    "%3u    %-11s    %-13s    %-13s\n",
-                                    (unsigned)now_tick,
-                                    status_label,
-                                    origin_buf,
-                                    next_buf);
+                            fprintf(Output_fp, "\n");
                         }
                         fclose(Output_fp);
                     }
