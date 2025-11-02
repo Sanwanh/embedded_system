@@ -36,6 +36,7 @@
 #define  OS_GLOBALS
 #include <ucos_ii.h>
 #endif
+#include <stdio.h>
 
 /*
 *********************************************************************************************************
@@ -1709,14 +1710,7 @@ void  OS_Sched (void)
 #if OS_CRITICAL_METHOD == 3u                           /* Allocate storage for CPU status register     */
     OS_CPU_SR  cpu_sr = 0u;
 #endif
-	OS_TCB* originTcb;
-    originTcb = OSTCBHighRdy;
-    //printf("%2d  task(%2d)(%2d)\t", OSTimeGet(), ((task_para_set*)(OSTCBHighRdy->OSTCBExtPtr))->TaskID, ((task_para_set*)(OSTCBHighRdy->OSTCBExtPtr))->TaskCount-1);
-    //if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0)
-    //{
-    //    fprintf(Output_fp, "%2d  task(%2d)(%2d)\t", OSTimeGet(), ((task_para_set*)(OSTCBHighRdy->OSTCBExtPtr))->TaskID, ((task_para_set*)(OSTCBHighRdy->OSTCBExtPtr))->TaskCount-1);
-    //    fclose(Output_fp);
-    //}
+    OS_TCB *p_origin_tcb = OSTCBCur;
 
     OS_ENTER_CRITICAL();
     if (OSIntNesting == 0u) {                          /* Schedule only if all ISRs done and ...       */
@@ -1735,58 +1729,127 @@ void  OS_Sched (void)
                 OS_TLS_TaskSw();
 #endif
 #endif           
-                task_para_set *p_origin_task = (task_para_set *)(originTcb->OSTCBExtPtr);
-                if (p_origin_task != (task_para_set *)0) {
-                    INT16U      now_tick     = OSTimeGet();
-                    CPU_BOOLEAN completed    = (p_origin_task->TaskRemainTime == 0u) ? OS_TRUE : OS_FALSE;
-                    const char *status_label = (completed == OS_TRUE) ? "Completion" : "Preemption";
-                    INT16S      origin_job = (INT16S)p_origin_task->TaskCount;
-                    if ((completed == OS_TRUE) && (origin_job > 0)) {
-                        origin_job -= 1;
+                if (p_origin_tcb != (OS_TCB *)0) {
+                    task_para_set *p_origin_task = (task_para_set *)(p_origin_tcb->OSTCBExtPtr);
+                    INT16U        now_tick       = OSTimeGet();
+                    CPU_BOOLEAN   origin_has_task = (p_origin_task != (task_para_set *)0) ? OS_TRUE : OS_FALSE;
+                    INT16U        origin_id      = OS_TASK_IDLE_PRIO;
+                    INT16S        origin_job     = 0;
+                    CPU_BOOLEAN   completed      = OS_FALSE;
+                    const char   *status_label   = "Preemption";
+                    INT32U        response_time  = 0u;
+                    INT32U        wait_time      = 0u;
+                    INT32U        slack_time     = 0u;
+                    char          origin_buf[20];
+                    char          next_buf[20];
+
+                    if (origin_has_task == OS_TRUE) {
+                        origin_id  = p_origin_task->TaskID;
+                        origin_job = (INT16S)p_origin_task->TaskCount;
+
+                        if (p_origin_task->TaskRemainTime == 0u) {
+                            completed    = OS_TRUE;
+                            status_label = "Completion";
+
+                            if (origin_job > 0) {
+                                origin_job -= 1;
+                            }
+
+                            {
+                                INT32U job_index    = (origin_job >= 0) ? (INT32U)origin_job : 0u;
+                                INT32U release_time = p_origin_task->TaskArriveTime;
+
+                                if ((p_origin_task->TaskPeriodic != 0u) && (job_index > 0u)) {
+                                    release_time += job_index * (INT32U)p_origin_task->TaskPeriodic;
+                                }
+
+                                if (now_tick >= release_time) {
+                                    response_time = (INT32U)now_tick - release_time;
+                                }
+
+                                if (response_time > p_origin_task->TaskExecutionTIme) {
+                                    wait_time = response_time - p_origin_task->TaskExecutionTIme;
+                                }
+
+                                if (p_origin_task->TaskPeriodic != 0u) {
+                                    INT32U deadline = release_time + p_origin_task->TaskPeriodic;
+
+                                    if (deadline > now_tick) {
+                                        slack_time = deadline - now_tick;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        origin_id = p_origin_tcb->OSTCBPrio;
                     }
 
-                    task_para_set *p_next_task = (OSTCBHighRdy != (OS_TCB *)0 && OSTCBHighRdy->OSTCBExtPtr != (void *)0)
+                    task_para_set *p_next_task = (OSTCBHighRdy != (OS_TCB *)0)
                                                  ? (task_para_set *)(OSTCBHighRdy->OSTCBExtPtr)
                                                  : (task_para_set *)0;
-                    INT16U        next_id     = 63u;
-                    INT16S        next_job    = 0;
-                    CPU_BOOLEAN   has_next    = OS_FALSE;
+                    INT16U        next_id      = OS_TASK_IDLE_PRIO;
+                    INT16S        next_job     = 0;
+                    CPU_BOOLEAN   has_next     = OS_FALSE;
 
                     if (p_next_task != (task_para_set *)0) {
                         next_id  = p_next_task->TaskID;
                         next_job = (INT16S)p_next_task->TaskCount;
                         has_next = OS_TRUE;
+                    } else if (OSTCBHighRdy != (OS_TCB *)0) {
+                        next_id = OSTCBHighRdy->OSTCBPrio;
                     }
 
-                    printf("%2d %s task(%2d)(%2d) task(%2d)",
-                           now_tick,
-                           status_label,
-                           p_origin_task->TaskID,
-                           origin_job,
-                           next_id);
+                    if (origin_has_task == OS_TRUE) {
+                        (void)sprintf(origin_buf,
+                                      "task(%3u)(%2d)",
+                                      (unsigned)origin_id,
+                                      origin_job);
+                    } else {
+                        (void)sprintf(origin_buf,
+                                      "task(%3u)",
+                                      (unsigned)origin_id);
+                    }
+
                     if (has_next == OS_TRUE) {
-                        printf("(%2d)", next_job);
+                        (void)sprintf(next_buf,
+                                      "task(%3u)(%2d)",
+                                      (unsigned)next_id,
+                                      next_job);
+                    } else {
+                        (void)sprintf(next_buf,
+                                      "task(%3u)",
+                                      (unsigned)next_id);
+                    }
+
+                    printf("%3u    %-11s    %-13s    %-13s",
+                           (unsigned)now_tick,
+                           status_label,
+                           origin_buf,
+                           next_buf);
+
+                    if (completed == OS_TRUE) {
+                        printf("%12u%14u%14u", (unsigned)response_time, (unsigned)wait_time, (unsigned)slack_time);
                     }
                     printf("\n");
 
                     if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0) {
-                        if (has_next == OS_TRUE) {
+                        if (completed == OS_TRUE) {
                             fprintf(Output_fp,
-                                    "%2d %s task(%2d)(%2d) task(%2d)(%2d)\n",
-                                    now_tick,
+                                    "%3u    %-11s    %-13s    %-13s%12u%14u%14u\n",
+                                    (unsigned)now_tick,
                                     status_label,
-                                    p_origin_task->TaskID,
-                                    origin_job,
-                                    next_id,
-                                    next_job);
+                                    origin_buf,
+                                    next_buf,
+                                    (unsigned)response_time,
+                                    (unsigned)wait_time,
+                                    (unsigned)slack_time);
                         } else {
                             fprintf(Output_fp,
-                                    "%2d %s task(%2d)(%2d) task(%2d)\n",
-                                    now_tick,
+                                    "%3u    %-11s    %-13s    %-13s\n",
+                                    (unsigned)now_tick,
                                     status_label,
-                                    p_origin_task->TaskID,
-                                    origin_job,
-                                    next_id);
+                                    origin_buf,
+                                    next_buf);
                         }
                         fclose(Output_fp);
                     }

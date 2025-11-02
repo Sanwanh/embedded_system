@@ -37,6 +37,7 @@
 #include  <cpu.h>
 #include  <lib_mem.h>
 #include  <os.h>
+#include  <stdio.h>
 
 #include  "app_cfg.h"
 #define TASK_STACKSIZE 2048
@@ -90,6 +91,7 @@ void task(void* p_arg) {
     INT32U        time_tag;
 
     task_data      = p_arg;
+    task_data->TaskCount = 0u;
     next_release   = task_data->TaskArriveTime;
     task_data->TaskRemainTime = task_data->TaskExecutionTIme;
     time_tag       = OSTimeGet();
@@ -115,10 +117,10 @@ void task(void* p_arg) {
         time_tag                = run_tick;
         task_data->TaskStartTime = (INT16U)run_tick;
 
-        printf("%2d task(%2d) is running\n", run_tick, task_data->TaskID);
+        printf("%3u    task (%3u) is running\n", (unsigned)run_tick, (unsigned)task_data->TaskID);
         if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0)
         {
-            fprintf(Output_fp, "%2d task(%2d) is running\n", run_tick, task_data->TaskID);
+            fprintf(Output_fp, "%3u    task (%3u) is running\n", (unsigned)run_tick, (unsigned)task_data->TaskID);
             fclose(Output_fp);
         }
 
