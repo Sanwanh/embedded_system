@@ -90,22 +90,31 @@ void task(void* p_arg) {
 
     task_data->TaskStartTime = OSTimeGet();
     task_data->TaskRemainTime = task_data->TaskExecutionTIme;
-    int time_tag = OSTimeGet();
+    INT32U time_tag = OSTimeGet();
     //printf("Remain %d ", task_data->TaskRemainTime);
 
     while (1) {
         if (task_data->TaskRemainTime > 0) {
             //task_data->TaskRemainTime -= (OSTimeGet() - task_data->TaskStartTime);
-            printf("%2d  task(%2d) is running\n", OSTimeGet(), task_data->TaskID);
+            INT32U now_tick = OSTimeGet();
+            printf("%2d task(%2d) is running\n", now_tick, task_data->TaskID);
             if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0)
             {
-                fprintf(Output_fp, "%2d  task(%2d) is running\n", OSTimeGet(), task_data->TaskID);
+                fprintf(Output_fp, "%2d task(%2d) is running\n", now_tick, task_data->TaskID);
                 fclose(Output_fp);
             }
             while (task_data->TaskRemainTime > 0) {
-                if ((OSTimeGet() - time_tag) == 1) {
-                    task_data->TaskRemainTime -= (OSTimeGet() - task_data->TaskStartTime);
-					time_tag = OSTimeGet();
+                INT32U now = OSTimeGet();
+                if (now - time_tag >= 1u) {
+                    INT32U elapsed = now - time_tag;
+
+                    if (elapsed > task_data->TaskRemainTime) {
+                        elapsed = task_data->TaskRemainTime;
+                    }
+
+                    task_data->TaskRemainTime -= elapsed;
+                    time_tag = now;
+                    task_data->TaskStartTime = (INT16U)now;
                     //printf("%2d  task(%2d) is running\n", OSTimeGet(), task_data->TaskID);
                 }
             }
