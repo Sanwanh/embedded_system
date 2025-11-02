@@ -1735,15 +1735,61 @@ void  OS_Sched (void)
                 OS_TLS_TaskSw();
 #endif
 #endif           
-                if (((task_para_set*)(originTcb->OSTCBExtPtr))->TaskRemainTime == 0) printf("%2d  Completion\ttask(%2d)(%2d)\t", OSTimeGet(), ((task_para_set*)(originTcb->OSTCBExtPtr))->TaskID, ((task_para_set*)(originTcb->OSTCBExtPtr))->TaskCount - 1);
-                else printf("%2d  Preemption\ttask(%2d)(%2d)\t", OSTimeGet(), ((task_para_set*)(originTcb->OSTCBExtPtr))->TaskID, ((task_para_set*)(originTcb->OSTCBExtPtr))->TaskCount - 1);
-                if (OSTCBHighRdy != NULL && OSTCBHighRdy->OSTCBExtPtr != NULL)  printf("task(%2d)(%2d)\n", ((task_para_set*)(OSTCBHighRdy->OSTCBExtPtr))->TaskID, ((task_para_set*)(OSTCBHighRdy->OSTCBExtPtr))->TaskCount);
-                else printf("task(%2d)\n",63);
-                if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0)
-                {
-                    if (OSTCBHighRdy != NULL && OSTCBHighRdy->OSTCBExtPtr != NULL)  fprintf(Output_fp, "task(%2d)(%2d)\n", ((task_para_set*)(OSTCBHighRdy->OSTCBExtPtr))->TaskID, ((task_para_set*)(OSTCBHighRdy->OSTCBExtPtr))->TaskCount);
-                    else fprintf(Output_fp, "task(%2d)\n", 63);
-                    fclose(Output_fp);
+                task_para_set *p_origin_task = (task_para_set *)(originTcb->OSTCBExtPtr);
+                if (p_origin_task != (task_para_set *)0) {
+                    INT16U      now_tick     = OSTimeGet();
+                    CPU_BOOLEAN completed    = (p_origin_task->TaskRemainTime == 0u) ? OS_TRUE : OS_FALSE;
+                    const char *status_label = (completed == OS_TRUE) ? "Completion" : "Preemption";
+                    INT16S      origin_job = (INT16S)p_origin_task->TaskCount;
+                    if ((completed == OS_TRUE) && (origin_job > 0)) {
+                        origin_job -= 1;
+                    }
+
+                    task_para_set *p_next_task = (OSTCBHighRdy != (OS_TCB *)0 && OSTCBHighRdy->OSTCBExtPtr != (void *)0)
+                                                 ? (task_para_set *)(OSTCBHighRdy->OSTCBExtPtr)
+                                                 : (task_para_set *)0;
+                    INT16U        next_id     = 63u;
+                    INT16S        next_job    = 0;
+                    CPU_BOOLEAN   has_next    = OS_FALSE;
+
+                    if (p_next_task != (task_para_set *)0) {
+                        next_id  = p_next_task->TaskID;
+                        next_job = (INT16S)p_next_task->TaskCount;
+                        has_next = OS_TRUE;
+                    }
+
+                    printf("%2d %s task(%2d)(%2d) task(%2d)",
+                           now_tick,
+                           status_label,
+                           p_origin_task->TaskID,
+                           origin_job,
+                           next_id);
+                    if (has_next == OS_TRUE) {
+                        printf("(%2d)", next_job);
+                    }
+                    printf("\n");
+
+                    if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0) {
+                        if (has_next == OS_TRUE) {
+                            fprintf(Output_fp,
+                                    "%2d %s task(%2d)(%2d) task(%2d)(%2d)\n",
+                                    now_tick,
+                                    status_label,
+                                    p_origin_task->TaskID,
+                                    origin_job,
+                                    next_id,
+                                    next_job);
+                        } else {
+                            fprintf(Output_fp,
+                                    "%2d %s task(%2d)(%2d) task(%2d)\n",
+                                    now_tick,
+                                    status_label,
+                                    p_origin_task->TaskID,
+                                    origin_job,
+                                    next_id);
+                        }
+                        fclose(Output_fp);
+                    }
                 }
                 OS_TASK_SW();                          /* Perform a context switch                     */
             }
