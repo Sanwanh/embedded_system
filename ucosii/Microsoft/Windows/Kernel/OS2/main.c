@@ -37,6 +37,7 @@
 #include  <cpu.h>
 #include  <lib_mem.h>
 #include  <os.h>
+#include  <stdio.h>
 
 #include  "app_cfg.h"
 #define TASK_STACKSIZE 2048
@@ -86,32 +87,71 @@ static void task(void* p_arg);
 
 void task(void* p_arg) {
     task_para_set* task_data;
-    task_data = p_arg;
+    INT32U        next_release;
+    INT32U        time_tag;
 
-    task_data->TaskStartTime = OSTimeGet();
+    task_data      = p_arg;
+    task_data->TaskCount = 0u;
+    next_release   = task_data->TaskArriveTime;
     task_data->TaskRemainTime = task_data->TaskExecutionTIme;
-    int time_tag = OSTimeGet();
-    //printf("Remain %d ", task_data->TaskRemainTime);
+    time_tag       = OSTimeGet();
 
     while (1) {
-        if (task_data->TaskRemainTime > 0) {
-            //task_data->TaskRemainTime -= (OSTimeGet() - task_data->TaskStartTime);
-            printf("%2d  task(%2d) is running\n", OSTimeGet(), task_data->TaskID);
-            if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0)
-            {
-                fprintf(Output_fp, "%2d  task(%2d) is running\n", OSTimeGet(), task_data->TaskID);
-                fclose(Output_fp);
+        INT32U now = OSTimeGet();
+
+        if (now < next_release) {
+            INT32U wait_ticks = next_release - now;
+            INT16U sleep      = (wait_ticks > (INT32U)0xFFFFu) ? (INT16U)0xFFFFu : (INT16U)wait_ticks;
+
+            if (sleep > 0u) {
+                OSTimeDly(sleep);
             }
-            while (task_data->TaskRemainTime > 0) {
-                if ((OSTimeGet() - time_tag) == 1) {
-                    task_data->TaskRemainTime -= (OSTimeGet() - task_data->TaskStartTime);
-					time_tag = OSTimeGet();
-                    //printf("%2d  task(%2d) is running\n", OSTimeGet(), task_data->TaskID);
-                }
-            }
+            continue;
         }
-        task_data->TaskCount += 1;
-        OSTimeDly(1);
+
+        if (task_data->TaskRemainTime == 0u) {
+            task_data->TaskRemainTime = task_data->TaskExecutionTIme;
+        }
+
+        INT32U run_tick = OSTimeGet();
+        time_tag                = run_tick;
+        task_data->TaskStartTime = (INT16U)run_tick;
+
+        printf("%3u    task (%3u) is running\n", (unsigned)run_tick, (unsigned)task_data->TaskID);
+        if ((Output_err = fopen_s(&Output_fp, "./Output.txt", "a")) == 0)
+        {
+            fprintf(Output_fp, "%3u    task (%3u) is running\n", (unsigned)run_tick, (unsigned)task_data->TaskID);
+            fclose(Output_fp);
+        }
+
+        while (task_data->TaskRemainTime > 0u) {
+            INT32U now_tick = OSTimeGet();
+
+            if (now_tick == time_tag) {
+                OSTimeDly(1u);
+                continue;
+            }
+
+            INT32U elapsed = now_tick - time_tag;
+
+            if (elapsed > task_data->TaskRemainTime) {
+                elapsed = task_data->TaskRemainTime;
+            }
+
+            task_data->TaskRemainTime -= elapsed;
+            time_tag                   = now_tick;
+            task_data->TaskStartTime   = (INT16U)now_tick;
+        }
+
+        task_data->TaskCount += 1u;
+
+        if (task_data->TaskPeriodic != 0u) {
+            next_release = task_data->TaskArriveTime + (task_data->TaskCount * task_data->TaskPeriodic);
+        } else {
+            next_release = OSTimeGet() + 1u;
+        }
+
+        OSTimeDly(1u);
     }
 }
 
