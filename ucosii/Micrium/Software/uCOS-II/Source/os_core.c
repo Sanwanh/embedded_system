@@ -1848,6 +1848,7 @@ static  void  OS_SchedNew (void)
         task_para_set *p_task_data;
         task_para_set *p_best_task = (task_para_set *)0;
         INT8U          best_prio    = OS_TASK_IDLE_PRIO;
+        INT8U          fallback_prio = OSPrioHighRdy;
         CPU_BOOLEAN    found        = OS_FALSE;
 
         for (INT16U prio = 0u; prio <= OS_LOWEST_PRIO; prio++) {
@@ -1857,6 +1858,10 @@ static  void  OS_SchedNew (void)
             }
 
             if (p_tcb->OSTCBStat != OS_STAT_RDY) {
+                continue;
+            }
+
+            if (p_tcb->OSTCBDly != 0u) {
                 continue;
             }
 
@@ -1882,7 +1887,7 @@ static  void  OS_SchedNew (void)
         if (found == OS_TRUE) {
             OSPrioHighRdy = best_prio;
         } else {
-            OSPrioHighRdy = OS_TASK_IDLE_PRIO;
+            OSPrioHighRdy = fallback_prio;
         }
     }
 #elif FIFO

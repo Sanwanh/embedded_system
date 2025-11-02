@@ -124,7 +124,7 @@ void task(void* p_arg) {
 
         while (task_data->TaskRemainTime > 0u) {
             INT32U now_tick = OSTimeGet();
-  
+
             if (now_tick == time_tag) {
                 OSTimeDly(1u);
                 continue;
